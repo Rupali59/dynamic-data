@@ -24,9 +24,9 @@
 		 */
 		public function create(Request $request)
 		{
-			$input     = $this->input;
+			$input = $this->input;
 			$tableName = $input[ 'tableName' ];
-			$columns   = $input[ 'columns' ];
+			$columns = $input[ 'columns' ];
 			if ($this->exists($tableName)) {
 				return \response("Table with name $tableName already exists!", Response::HTTP_FORBIDDEN);
 			}
@@ -34,19 +34,37 @@
 				try {
 					Schema::create($tableName, function (Blueprint $table) use ($columns) {
 						$table->increments('id');
+						$primary = [ 'id' ];
+						$unique = [];
 						foreach ($columns as $column) {
+							$arguments = [];
 							$method = $this->mapColumns($column[ 'type' ]);
+							$arguments [] = $column[ 'name' ];
+
 							if ($method == "integer") {
-								call_user_func_array([ $table, $method ], [ $column[ 'name' ], false, isset($column[ "unsigned" ]) ]);
+								$arguments[] = false;
+								$arguments[] = isset($column[ "unsigned" ]);
 							}
 							else {
-								call_user_func_array([ $table, $method ], [ $column[ 'name' ], implode("", $column[ 'arguments' ]) ]);
+								$arguments[] = implode("", $column[ 'arguments' ]);
+							}
+
+							if (isset($column[ 'unique' ])) {
+								call_user_func_array([ $table, $method ], $arguments)->unique();
+							}
+							else {
+								if (isset($column[ 'default' ])) {
+									call_user_func_array([ $table, $method ], $arguments)->default($column[ 'default' ]);
+								}
+								else {
+									call_user_func_array([ $table, $method ], $arguments);
+								}
 							}
 						}
 					});
 					return \response("Table with name $tableName created!", Response::HTTP_OK);
 				} catch (\Exception $exception) {
-					return \response("Error in creating a new table", Response::HTTP_INTERNAL_SERVER_ERROR);
+					return \response("Error in creating a new table!", Response::HTTP_INTERNAL_SERVER_ERROR);
 
 				}
 			}
@@ -160,14 +178,21 @@
 		 */
 		public function show($schemaName)
 		{
-			$data = $users = DB::table($schemaName)->get();
-			return \response(json_encode($data), Response::HTTP_OK);
+			if (Schema::hasTable($schemaName)) {
+				$data = $users = DB::table($schemaName)->get();
+				return \response(json_encode($data), Response::HTTP_OK);
+			}
+			else {
+				return \response("No such table exists!", Response::HTTP_FORBIDDEN);
+
+			}
+
 		}
 
 		public function showAll()
 		{
 			$tableNames = [];
-			$tables     = DB::select('SHOW TABLES');
+			$tables = DB::select('SHOW TABLES');
 			foreach ($tables as $table) {
 				foreach ($table as $key => $value) {
 					$tableNames[] = $value;
@@ -186,10 +211,14 @@
 		 */
 		public function update($schemaName)
 		{
-			$input = $this->input;
-			DB::table($schemaName)
-			  ->where('id', $input[ 'id' ])
-			  ->update($input[ 'content' ]);
+			if (Schema::hasTable($schemaName)) {
+				$input = $this->input;
+				DB::table($schemaName)
+				  ->where('id', $input[ 'id' ])
+				  ->update($input[ 'content' ]);
+				return \response("Succesfull updated the record!", Response::HTTP_OK);
+			}
+			return \response("No such table exists!", Response::HTTP_FORBIDDEN);
 		}
 
 		/**
@@ -201,12 +230,26 @@
 		 */
 		public function deleteRow($schemaName)
 		{
-			$input = $this->input;
-			DB::table($schemaName)->where('id', $input[ 'id' ])->delete();
+			if (Schema::hasTable($schemaName)) {
+				$input = $this->input;
+				DB::table($schemaName)
+				  ->where('id', $input[ 'id' ])
+				  ->delete();
+				return \response("Succesfull deleted the record!", Response::HTTP_OK);
+
+			}
+			return \response("No such table exists!", Response::HTTP_FORBIDDEN);
+
 		}
 
 		public function dropTable($schemaName)
 		{
-			DB::table($schemaName)->delete();
+			if (Schema::hasTable($schemaName)) {
+				DB::table($schemaName)->delete();
+				return \response("Succesfull dropped the table!", Response::HTTP_OK);
+
+			}
+			return \response("No such table exists!", Response::HTTP_FORBIDDEN);
+
 		}
 	}
