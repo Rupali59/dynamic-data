@@ -64,7 +64,7 @@
 					});
 					return \response("Table with name $tableName created!", Response::HTTP_OK);
 				} catch (\Exception $exception) {
-					return \response("Error in creating a new table: $exception", Response::HTTP_INTERNAL_SERVER_ERROR);
+					return \response("Error in creating a new table!", Response::HTTP_INTERNAL_SERVER_ERROR);
 
 				}
 			}
