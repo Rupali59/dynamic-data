@@ -179,14 +179,16 @@
 		public function show($schemaName)
 		{
 			if (Schema::hasTable($schemaName)) {
-				$data = $users = DB::table($schemaName)->get();
+				$input = $this->input;
+				$skip = isset($input['skip']) ? $input['skip'] : 0;
+				$limit = isset($input['limit']) ? $input['limit'] : 5000;
+				$data = DB::table($schemaName)->offset($skip)->take($limit)->get();
 				return \response(json_encode($data), Response::HTTP_OK);
 			}
 			else {
 				return \response("No such table exists!", Response::HTTP_FORBIDDEN);
 
 			}
-
 		}
 
 		public function showAll()
@@ -246,7 +248,7 @@
 		{
 			if (Schema::hasTable($schemaName)) {
 				DB::table($schemaName)->delete();
-				return \response("Succesfull dropped the table!", Response::HTTP_OK);
+				return \response("Succesfully dropped the table!", Response::HTTP_OK);
 
 			}
 			return \response("No such table exists!", Response::HTTP_FORBIDDEN);

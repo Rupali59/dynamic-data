@@ -30,4 +30,4 @@ Route::post('/{schemaname}/update-data', 'SchemaController@update');
 
 Route::delete('/{schemaname}/delete-data', 'SchemaController@deleteRow');
 
-Route::delete('/{schemaname}/drop', 'SchemaController@dropTable');
+Route::delete('/{schemaname}/dropSchema', 'SchemaController@dropTable');
